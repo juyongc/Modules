@@ -1,0 +1,3 @@
+rootProject.name = 'modules'
+include 'oauth2-service'
+
