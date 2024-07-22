@@ -17,4 +17,5 @@ public class ViewLoginController {
     public String home() {
         return "home";
     }
+
 }

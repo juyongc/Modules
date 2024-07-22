@@ -24,6 +24,8 @@ public class SecurityConfig {
             .csrf((AbstractHttpConfigurer::disable))
             .authorizeHttpRequests(authorize -> authorize
                 .requestMatchers("/health/**", "/oauth/**", "/login/**", "/token/**", "/css/**").permitAll()
+//                    .requestMatchers("/admin/**").permitAll()
+                .requestMatchers("/admin/**").hasAuthority("ADMIN")
                 .anyRequest().authenticated()
             )
             .oauth2Login(oauth2 -> oauth2

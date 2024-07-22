@@ -11,8 +11,11 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -33,15 +36,32 @@ public class FirebaseTokenFilter extends HttpFilter {
 
         if (token != null) {
             try {
+
+                // 파이어베이스로 토큰 유효성 검사 확인
                 FirebaseToken decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
+                String uid = decodedToken.getUid();
+
+                // 커스텀 토큰 만들어서 프론트와 통신
+                // 로그인해서 이미 커스텀 정보가 추가된 상태면 생략
+                if (!decodedToken.getClaims().containsKey("addToken")) {
+                    String customToken = addCustomToken(uid);
+                    log.info("add token = " + customToken);
+                    response.setHeader("customToken", customToken);
+                }
+
+//                 실제로는 유저별 권한 가져와서 등록해야함
+//                String authority = memberRepository.findById(uid).getAuthority();
+                String authority = "ADMIN";
 
                 SecurityContext context = SecurityContextHolder.createEmptyContext();
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                    decodedToken.getUid(), null, Collections.emptyList());
+                    uid, null, Collections.singletonList(new SimpleGrantedAuthority(authority)));
+
                 context.setAuthentication(authentication);
                 SecurityContextHolder.setContext(context);
 
             } catch (FirebaseAuthException e) {
+                log.info(e.getMessage());
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid Firebase token");
                 return;
             }
@@ -49,10 +69,21 @@ public class FirebaseTokenFilter extends HttpFilter {
         chain.doFilter(request, response);
     }
 
+    /**
+     * 커스텀 토큰 생성 기능
+     */
+    private String addCustomToken(String uid) throws FirebaseAuthException {
+
+        Map<String, Object> additionalClaims = new HashMap<>();
+
+        additionalClaims.put("addToken", "add something");
+        additionalClaims.put("authorization", "ADMIN");
+        return FirebaseAuth.getInstance().createCustomToken(uid, additionalClaims);
+    }
+
     private String getBearerToken(HttpServletRequest request) {
         String bearerToken = request.getHeader("Authorization");
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            log.info("bearToken = " + bearerToken);
             return bearerToken.substring(7);
         }
         return null;
