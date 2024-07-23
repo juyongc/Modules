@@ -16,22 +16,26 @@ public class FirebaseConfig {
     @Bean
     public FirebaseApp firebaseApp() throws IOException {
 
-        List<FirebaseApp> apps = FirebaseApp.getApps();
-        if (apps != null && !apps.isEmpty()) {
-            for (FirebaseApp app : apps) {
-                if (app.getName().equals(FirebaseApp.DEFAULT_APP_NAME)) {
-                    return app;
+        String serviceAccountPath = "oauth2-service/src/main/resources/firebase-service-account.json";
+
+        // FileInputStream을 try-with-resources로 사용하여 자동으로 닫히도록 함
+        try (FileInputStream serviceAccount = new FileInputStream(serviceAccountPath)) {
+            FirebaseOptions options = FirebaseOptions.builder()
+                .setCredentials(GoogleCredentials.fromStream(serviceAccount))
+                .build();
+
+            // 이미 초기화된 앱이 있는지 확인하고, 없으면 초기화
+            List<FirebaseApp> apps = FirebaseApp.getApps();
+            if (apps != null && !apps.isEmpty()) {
+                for (FirebaseApp app : apps) {
+                    if (app.getName().equals(FirebaseApp.DEFAULT_APP_NAME)) {
+                        return app;
+                    }
                 }
             }
+
+            return FirebaseApp.initializeApp(options);
         }
-
-        FileInputStream serviceAccount = new FileInputStream("oauth2-service/src/main/resources/firebase-service-account.json");
-
-        FirebaseOptions options = FirebaseOptions.builder()
-            .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-            .build();
-
-        return FirebaseApp.initializeApp(options);
     }
 
 }

@@ -21,7 +21,7 @@ import org.springframework.web.servlet.ModelAndView;
 @RestController
 public class LoginController {
 
-    @PostMapping("/token/check")
+    @PostMapping("/token/check/google")
     public ResponseEntity<String> checkToken(@RequestHeader("Authorization") String authorizationHeader) {
 
         String token = authorizationHeader.replace("Bearer ", "");
