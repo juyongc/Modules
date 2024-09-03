@@ -1,3 +1,4 @@
 rootProject.name = 'modules'
 include 'oauth2-service'
+include 'social-oauth2-service'
 
