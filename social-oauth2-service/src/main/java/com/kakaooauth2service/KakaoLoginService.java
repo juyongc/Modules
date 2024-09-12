@@ -1,6 +1,8 @@
 package com.kakaooauth2service;
 
 import io.netty.handler.codec.http.HttpHeaderValues;
+import java.util.HashMap;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,32 +21,21 @@ public class KakaoLoginService {
     @Value("${spring.security.oauth2.client.provider.kakao.token-uri}")
     private String KAUTH_TOKEN_URL_HOST;
     @Value("${spring.security.oauth2.client.registration.kakao.redirect-uri}")
-    private String KAUTH_USER_URL_HOST;
+    private String REDIRECT_URI;
 
     public String getAccessTokenFromKakao(String code) {
 
-        log.info("======================");
-        log.info(KAUTH_TOKEN_URL_HOST);
-        log.info(KAUTH_USER_URL_HOST);
-
-        /**
-         * TODO : 여기 코드 분석 필요
-         */
         KakaoTokenResponseDto kakaoTokenResponseDto = WebClient.create(KAUTH_TOKEN_URL_HOST).post()
-            .uri(uriBuilder -> uriBuilder
-                .scheme("https")
-                .path(KAUTH_USER_URL_HOST)
-                .queryParam("grant_type", "authorization_code")
-                .queryParam("client_id", clientId)
-                .queryParam("code", code)
-                .build(true))
-            .header(HttpHeaders.CONTENT_TYPE, HttpHeaderValues.APPLICATION_X_WWW_FORM_URLENCODED.toString())
+            .header("Content-Type", "application/x-www-form-urlencoded;charset=utf-8")
+            .bodyValue("grant_type=authorization_code" +
+                "&client_id=" + clientId +
+                "&redirect_uri=" + REDIRECT_URI +
+                "&code=" + code)
             .retrieve()
-            //TODO : Custom Exception
-//            .onStatus(HttpStatusCode::is4xxClientError, clientResponse -> Mono.error(new RuntimeException("Invalid Parameter")))
-//            .onStatus(HttpStatusCode::is5xxServerError, clientResponse -> Mono.error(new RuntimeException("Internal Server Error")))
             .bodyToMono(KakaoTokenResponseDto.class)
             .block();
+
+        log.info(String.valueOf(kakaoTokenResponseDto));
 
         return kakaoTokenResponseDto.getAccessToken();
     }
